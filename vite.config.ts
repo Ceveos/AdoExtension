@@ -8,7 +8,8 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        summary: 'src/pages/summary/index.html'
+        summary: 'src/pages/summary/index.html',
+        completedSummary: 'src/pages/completed-summary/index.html'
       }
     }
   },

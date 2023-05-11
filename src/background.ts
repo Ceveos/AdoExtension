@@ -70,9 +70,8 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
 
   switch (message.action) {
     case 'OpenIterationSummary':
-    const validConfig = await isValidConfig();
 
-    if (validConfig === false) {
+    if ((await isValidConfig()) === false) {
       if (sender.tab?.id) {
         chrome.tabs.sendMessage(sender.tab.id, { error: 'Invalid ADO Power Tools Config' })
       } 
@@ -83,6 +82,20 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       active: true,
       url: `src/pages/summary/index.html?iteration=${message.iteration.id}`
     });
+      break;
+
+    case 'OpenCompletedIterationSummary':
+      if ((await isValidConfig()) === false) {
+        if (sender.tab?.id) {
+          chrome.tabs.sendMessage(sender.tab.id, { error: 'Invalid ADO Power Tools Config' })
+        } 
+        return;
+      }
+
+      await chrome.tabs.create({
+        active: true,
+        url: `src/pages/completed-summary/index.html?iteration=${message.iteration.id}`
+      });
       break;
     case 'GenerateIterationSummary':
       await loadIteration(message.iterationId);

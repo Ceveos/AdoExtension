@@ -1,5 +1,6 @@
 declare var dataProviders: any;
 let generateButton;
+let generateCompletedButton;
 
 type Iteration = {
   id: string
@@ -19,7 +20,17 @@ async function createSummary() {
     }));
 }
 
+async function createCompletedSummary() {
+  const iteration = getSelectedIteration();
+  console.log(`Creating completed summary for ${iteration.id}...`);
+  document.dispatchEvent(new CustomEvent('getCompletedSummaryForIteration',
+    {
+      detail: iteration
+    }));
+}
+
 async function addGenerateButton() {
+  //////// Generate button
   generateButton = document.createElement("button");
   generateButton.textContent = "Generate summary";
 
@@ -28,10 +39,20 @@ async function addGenerateButton() {
   generateButton.className = "vss-PivotBar--button bolt-button enabled bolt-focus-treatment";
   generateButton.onclick = createSummary;
 
+  //////// Generate completed summary button 
+  generateCompletedButton = document.createElement("button");
+  generateCompletedButton.textContent = "Generate completed summary";
+
+  // copy styling from ADO button
+  generateCompletedButton.id = "generate-completed-summary-button"
+  generateCompletedButton.className = "vss-PivotBar--button bolt-button enabled bolt-focus-treatment";
+  generateCompletedButton.onclick = createCompletedSummary;
+
   //TODO: check that we're on an iteration view first
   let topBar = document.getElementsByClassName("vss-HubTileRegion")[0];
   if (topBar) {
     topBar.prepend(generateButton);
+    topBar.prepend(generateCompletedButton);
   } else {
     waitFirst();
   }
