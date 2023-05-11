@@ -65,7 +65,7 @@ const App = (): JSX.Element => {
       // row.push("(type)")
 
 
-      if (item.tags.completedByMe) {
+      if (item.tags.completedByMe && !item.tags.reassigned?.fromMe) {
         overallRow.push("X")
         completedRow.push(`[${item.id}](https://microsoft.visualstudio.com/Edge/_workitems/edit/${item.id})`)
         completedRow.push(title);
