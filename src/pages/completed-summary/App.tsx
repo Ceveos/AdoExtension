@@ -102,23 +102,15 @@ const App = (): JSX.Element => {
           <header className="py-10">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               <h1 className="text-3xl font-bold tracking-tight text-white">
-                Summary
+                Completed Summary
               </h1>
             </div>
           </header>
         </div>
         <main className="-mt-32">
           <div className="mx-auto px-4 pb-12">
-            <div className="mx-auto max-w-7xl" data-color-mode="light">
-              <MDEditor
-                height={750}
-                value={value}
-                onChange={(val) => val && setValue(val)}
-                preview='preview'
-                previewOptions={{
-                    linkTarget: '_blank'
-                }}
-              />
+            <div className="mx-auto max-w-7xl bg-white sm:px-6 lg:px-8">
+              tree view here
             </div>
           </div>
         </main>
