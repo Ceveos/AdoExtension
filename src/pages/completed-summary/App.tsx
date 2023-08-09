@@ -3,7 +3,7 @@ import { BellIcon } from "@heroicons/react/24/outline";
 import logoPath from "../../assets/icons/128.png";
 import { IterationSummary } from "../../models/adoSummary";
 import { useSearchParams } from "react-router-dom";
-import { GenerateIterationSummaryAction } from "../../models/actions";
+import { GenerateCompletedSummaryAction, GenerateIterationSummaryAction } from "../../models/actions";
 import { Tree, NodeRendererProps } from "react-arborist";
 import { IdObj } from "react-arborist/dist/types/utils";
 
@@ -47,10 +47,20 @@ const data: TreeObj[] = [
   },
 ];
 
+export const ChevronRight: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg viewBox="0 0 20 20" fill="currentColor" {...props}>
+    <path
+      fillRule="evenodd"
+      d="M10 15.5a.5.5 0 01-.354-.854l4.096-4.096-4.096-4.096a.5.5 0 11.707-.707l4.5 4.5a.5.5 0 010 .707l-4.5 4.5A.498.498 0 0110 15.5z"
+      clipRule="evenodd"
+    />
+  </svg>
+);
+
 const App = (): JSX.Element => {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [iterationId, setIterationId] = useState<string>()
-  const [value, setValue] = useState("**No iteration specified; Waiting...**");
+  const [dateRange, setDateRange] = useState<{from: string, to: string}>()
+  const [value, setValue] = useState<TreeObj[]>([...data]);
   const [loaded, setLoaded] = useState<boolean>()
   const [generateRequestSent, setGenerateRequestSent] = useState<boolean>()
 
@@ -60,14 +70,14 @@ const App = (): JSX.Element => {
     sender: chrome.runtime.MessageSender,
     sendResponse: (response?: any) => void
   ) => {
-    if (!request.summary) {
+    if (!request.completedSummary) {
       return;
     }
     console.log("Got summary");
     console.log(request);
     const summary = request.summary as IterationSummary;
 
-   
+
   };
 
   useEffect(() => {
@@ -80,50 +90,57 @@ const App = (): JSX.Element => {
   }, [loaded]);
 
   useEffect(() => {
-    let newIterationId = searchParams.get('iteration')
-    if (iterationId !== newIterationId) {
-      setIterationId(newIterationId ?? undefined);
+    let from = searchParams.get('from')
+    let to = searchParams.get('to')
+    if (!from || !to) {
+      if (value.length > 0) {
+        setValue([]);
+      }
+      return;
+    }
+    if (!dateRange || dateRange.from !== from || dateRange.to !== to) {
+      setDateRange({from, to});
       setGenerateRequestSent(false)
     }
-  }, [iterationId, searchParams]);
+  }, [value, dateRange, searchParams]);
 
   useEffect(() => {
-    if (!iterationId || iterationId === null || generateRequestSent) {
+    if (!dateRange || dateRange === null || generateRequestSent) {
       return;
     }
 
     setGenerateRequestSent(true);
 
-    const action: GenerateIterationSummaryAction = {
-      action: 'GenerateIterationSummary',
-      iterationId: iterationId
+    const action: GenerateCompletedSummaryAction = {
+      action: 'GenerateCompletedSummary',
+      from: dateRange.from,
+      to: dateRange.to
     }
-    chrome.runtime.sendMessage(action, (resp) => {});
-  }, [iterationId, generateRequestSent]);
+    chrome.runtime.sendMessage(action, (resp) => { });
+  }, [dateRange, generateRequestSent]);
 
 
   function classNames(...classes: string[]) {
     return classes.filter(Boolean).join(' ')
   }
 
-  function  Node<T extends TreeObj>(props: NodeRendererProps<T>) {
-    
-    const {isFocused, isSelected} = props.node;
-
+  function Node<T extends TreeObj>(props: NodeRendererProps<T>) {
     /* This node instance can do many things. See the API reference. */
     return (
-      <div 
-        className={
-          classNames(
-            isFocused ? "bg-cyan-100" : "",
-            isSelected ? "bg-cyan-200" : "",
-            "hover:bg-cyan-100 h-full text-lg"
-          )
-        }
-        style={props.style} ref={props.dragHandle} onClick={() => props.node.toggle()}
+      <div
+        className="hover:bg-sky-100 h-full text-xl space-x-2"
+        style={props.style}
+        ref={props.dragHandle}
+        onClick={() => props.node.toggle()}
       >
-        {props.node.isLeaf ? "🍁" : "🗀"}
-        {props.node.data.name}
+        {!props.node.isLeaf && (
+          <ChevronRight 
+            className={classNames("inline w-6 h-6", props.node.isOpen ? "rotate-90" : "")} />
+        )}
+        <span>{props.node.isLeaf ? "🍁" : "🗀"}</span>
+
+        <span>{props.node.data.name}</span>
+        <span className="ml-auto">5/6 Completed</span>
       </div>
     );
   }
@@ -151,17 +168,6 @@ const App = (): JSX.Element => {
                     </div>
                   </div>
                 </div>
-                <div className="md:block">
-                  <div className="ml-4 flex items-center md:ml-6">
-                    <button
-                      type="button"
-                      className="rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
-                    >
-                      <span className="sr-only">View notifications</span>
-                      <BellIcon className="h-6 w-6" aria-hidden="true" />
-                    </button>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -177,10 +183,12 @@ const App = (): JSX.Element => {
           <div className="mx-auto px-4 pb-12">
             <div className="mx-auto max-w-7xl bg-white border-gray-200 sm:px-6 lg:px-8">
               <Tree
-                initialData={data as any}
+                initialData={value}
                 disableDrag
                 disableEdit
                 disableDrop
+                width={800}
+                rowHeight={30}
                 openByDefault={false}
               >{Node}</Tree>
             </div>

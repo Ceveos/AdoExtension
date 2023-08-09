@@ -15,10 +15,17 @@ export type GenerateIterationSummaryAction = {
     iterationId: string
 }
 
+export type GenerateCompletedSummaryAction = {
+    action: 'GenerateCompletedSummary'
+    from: string
+    to: string
+}
+
 export type BGAction =
     | OpenIterationSummaryAction
     | GenerateIterationSummaryAction
     | OpenCompletedIterationSummaryAction
+    | GenerateCompletedSummaryAction
 
 export function isBGAction(item: any): item is BGAction {
     if ((item as BGAction).action) {

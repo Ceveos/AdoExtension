@@ -1,5 +1,6 @@
 import { GetItemsFromIteration, GetIterations } from "./ado/api";
 import { SummaryForIteration } from "./ado/summary";
+import { CompletedSummaryForDateRange } from "./ado/summary/completed";
 import { isBGAction } from "./models/actions";
 import { loadConfig, isValidConfig, initializeConfig } from "./models/adoConfig";
 
@@ -28,7 +29,7 @@ const loadIteration = async (iterationId: string) => {
   const pastItemIds = data[iterationId] ?? [];
 
   // Remove duplicate item ids and then store.
-  chrome.storage.sync.set({[iterationId]:[...new Set(currentItemIds.concat(pastItemIds))]});
+  chrome.storage.sync.set({ [iterationId]: [...new Set(currentItemIds.concat(pastItemIds))] });
 }
 
 
@@ -48,7 +49,7 @@ chrome.alarms.create(
 )
 
 chrome.alarms.onAlarm.addListener(
-  async function(alarm) {
+  async function (alarm) {
     await loadLatestIteration();
   }
 )
@@ -71,30 +72,16 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   switch (message.action) {
     case 'OpenIterationSummary':
 
-    if ((await isValidConfig()) === false) {
-      if (sender.tab?.id) {
-        chrome.tabs.sendMessage(sender.tab.id, { error: 'Invalid ADO Power Tools Config' })
-      } 
-      return;
-    }
-
-    await chrome.tabs.create({
-      active: true,
-      url: `src/pages/summary/index.html?iteration=${message.iteration.id}`
-    });
-      break;
-
-    case 'OpenCompletedIterationSummary':
       if ((await isValidConfig()) === false) {
         if (sender.tab?.id) {
           chrome.tabs.sendMessage(sender.tab.id, { error: 'Invalid ADO Power Tools Config' })
-        } 
+        }
         return;
       }
 
       await chrome.tabs.create({
         active: true,
-        url: `src/pages/completed-summary/index.html?iteration=${message.iteration.id}`
+        url: `src/pages/summary/index.html?iteration=${message.iteration.id}`
       });
       break;
     case 'GenerateIterationSummary':
@@ -103,6 +90,26 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       let summary = await SummaryForIteration(message.iterationId)
       if (sender.tab?.id) {
         chrome.tabs.sendMessage(sender.tab?.id, { summary })
+      }
+      break;
+
+    case 'OpenCompletedIterationSummary':
+      if ((await isValidConfig()) === false) {
+        if (sender.tab?.id) {
+          chrome.tabs.sendMessage(sender.tab.id, { error: 'Invalid ADO Power Tools Config' })
+        }
+        return;
+      }
+
+      await chrome.tabs.create({
+        active: true,
+        url: `src/pages/completed-summary/index.html?from=2023-04-01&to=2023-05-01`
+      });
+      break;
+    case 'GenerateCompletedSummary':
+      let completedSummary = await CompletedSummaryForDateRange(message.from, message.to)
+      if (sender.tab?.id) {
+        chrome.tabs.sendMessage(sender.tab?.id, { completedSummary })
       }
       break;
   }
